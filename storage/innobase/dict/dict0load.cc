@@ -2084,21 +2084,32 @@ void dict_save_data_dir_path(dict_table_t *table, char *filepath) {
   ut_ad(table->data_dir_path == nullptr);
   ut_a(Fil_path::has_suffix(IBD, filepath));
 
-  /* Ensure this filepath is not the default filepath. */
-  char *default_filepath = Fil_path::make("", table->name.m_name, IBD);
+  /* Ensure this filepath does not physically reside at the default location.
+  Build default_filepath from the resolved datadir so that both sides of the
+  comparison are real paths. This handles the case where a database directory
+  is a symlink to external storage: get_real_path() resolves
+  "/var/lib/mysql/db/t.ibd" to "/external/db/t.ibd", which differs from the
+  default "/var/lib/mysql/db/t.ibd". Without this, data_dir_path would be
+  left null while DICT_TF_MASK_DATA_DIR is set, causing
+  ut_a(strlen(m_remote_path) != 0) to abort on TRUNCATE TABLE. */
+  char *default_filepath =
+      Fil_path::make(MySQL_datadir_path.abs_path(), table->name.m_name, IBD);
 
   if (default_filepath == nullptr) {
-    /* Memory allocation problem. */
     return;
   }
 
-  if (strcmp(filepath, default_filepath) != 0) {
-    size_t pathlen = strlen(filepath);
+  /* Resolve symlinks in filepath; fall back to literal path if realpath fails. */
+  std::string real_filepath = Fil_path::get_real_path(filepath);
+  const char *compare_filepath =
+      real_filepath.empty() ? filepath : real_filepath.c_str();
+
+  if (strcmp(compare_filepath, default_filepath) != 0) {
+    size_t pathlen = strlen(compare_filepath);
 
     ut_a(pathlen < OS_FILE_MAX_PATH);
-    ut_a(Fil_path::has_suffix(IBD, filepath));
 
-    char *data_dir_path = mem_heap_strdup(table->heap, filepath);
+    char *data_dir_path = mem_heap_strdup(table->heap, compare_filepath);
 
     Fil_path::make_data_dir_path(data_dir_path);
 
