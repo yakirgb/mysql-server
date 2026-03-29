@@ -618,6 +618,22 @@ void warn_on_deprecated_user_defined_collation(
 
 /*
    Tokens from MySQL 5.7, keep in alphabetical order.
+
+   Keyword reservation convention
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   Non-reserved:  %token<lexer.keyword> NAME num
+     The keyword may be used as an unquoted identifier.
+     It MUST appear in one of the ident_keywords_* rules below.
+
+   Reserved:      %token  NAME num
+     The keyword may NOT be used as an unquoted identifier.
+     It MUST NOT appear in any ident_keywords_* rule below.
+
+   WARNING: Declaring a reserved keyword with %token<lexer.keyword>
+   (i.e. omitting it from ident_keywords_* while using the non-reserved
+   form) is a silent error.  The parser still rejects the word as an
+   identifier, but INFORMATION_SCHEMA.KEYWORDS will incorrectly report
+   RESERVED=0.  See sql/gen_keyword_list.cc for how the flag is derived.
 */
 
 %token  ABORT_SYM 258                     /* INTERNAL (used in lex) */
@@ -718,7 +734,7 @@ void warn_on_deprecated_user_defined_collation(
 %token<lexer.keyword> CPU_SYM 353
 %token  CREATE 354                        /* SQL-2003-R */
 %token  CROSS 355                         /* SQL-2003-R */
-%token<lexer.keyword> CUBE_SYM 356        /* SQL-2003-R */
+%token  CUBE_SYM 356                      /* SQL-2003-R */
 %token  CURDATE 357                       /* MYSQL-FUNC */
 %token<lexer.keyword> CURRENT_SYM 358           /* SQL-2003-R */
 %token  CURRENT_USER 359                  /* SQL-2003-R */
@@ -1446,14 +1462,14 @@ void warn_on_deprecated_user_defined_collation(
 %token<lexer.keyword> LOG_SYM                    1206   /* MYSQL */
 %token<lexer.keyword> GTIDS_SYM                  1207   /* MYSQL */
 
-%token<lexer.keyword> PARALLEL_SYM       1208      /* MYSQL */
+%token  PARALLEL_SYM                     1208      /* MYSQL */
 %token<lexer.keyword> S3_SYM             1209      /* MYSQL */
-%token<lexer.keyword> QUALIFY_SYM        1210      /* MYSQL */
+%token  QUALIFY_SYM                      1210      /* MYSQL */
 
 %token<lexer.keyword> AUTO_SYM                   1211   /* MYSQL */
-%token<lexer.keyword> MANUAL_SYM                 1212   /* MYSQL */
+%token  MANUAL_SYM                              1212   /* MYSQL */
 %token<lexer.keyword> BERNOULLI_SYM              1213  /* SQL-2016-N */
-%token<lexer.keyword> TABLESAMPLE_SYM            1214  /* SQL-2016-R */
+%token  TABLESAMPLE_SYM                         1214  /* SQL-2016-R */
 
 /*
   NOTE! When adding new non-standard keywords, make sure they are added to the
